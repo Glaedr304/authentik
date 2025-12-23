@@ -130,36 +130,46 @@ export class GroupViewPage extends AKElement {
                                         <dd class="pf-c-description-list__description">
                                             <div class="pf-c-description-list__text">
                                                 <ul class="pf-c-list">
-                                                    ${this.group.rolesObj.length > 0
-                                                        ? this.group.rolesObj.map((role) => {
-                                                              return html`<li>
-                                                                  <a href=${`#/identity/roles/${role.pk}`}
-                                                                      >${role.name}
-                                                                  </a>
-                                                              </li>`;
-                                                          })
-                                                        : html`<li><em>${msg("None")}</em></li>`}
-                                                </ul>
-                                            </div>
-                                        </dd>
-                                    </div>
-                                    <div class="pf-c-description-list__group">
-                                        <dt class="pf-c-description-list__term">
-                                            <span class="pf-c-description-list__text"
-                                                >${msg("Inherited Roles")}</span
-                                            >
-                                        </dt>
-                                        <dd class="pf-c-description-list__description">
-                                            <div class="pf-c-description-list__text">
-                                                <ul class="pf-c-list">
-                                                    ${(this.group.inheritedRolesObj ?? []).length > 0
-                                                        ? (this.group.inheritedRolesObj ?? []).map((role) => {
-                                                              return html`<li>
-                                                                  <a href=${`#/identity/roles/${role.pk}`}
-                                                                      >${role.name}
-                                                                  </a>
-                                                              </li>`;
-                                                          })
+                                                    ${this.group.rolesObj.length > 0 ||
+                                                    (this.group.inheritedRolesObj ?? []).length > 0
+                                                        ? html`
+                                                              ${this.group.rolesObj.map((role) => {
+                                                                  return html`<li>
+                                                                      <a
+                                                                          href=${`#/identity/roles/${role.pk}`}
+                                                                          >${role.name}</a
+                                                                      >
+                                                                  </li>`;
+                                                              })}
+                                                              ${(
+                                                                  this.group.inheritedRolesObj ?? []
+                                                              ).map((role) => {
+                                                                  return html`<li>
+                                                                      <a
+                                                                          href=${`#/identity/roles/${role.pk}`}
+                                                                          >${role.name}</a
+                                                                      >
+                                                                      <pf-tooltip
+                                                                          position="top"
+                                                                          content=${msg(
+                                                                              "Inherited from parent group",
+                                                                          )}
+                                                                      >
+                                                                          <span
+                                                                              class="pf-c-label pf-m-outline pf-m-cyan"
+                                                                              style="margin-left: 0.5rem;"
+                                                                          >
+                                                                              <span
+                                                                                  class="pf-c-label__content"
+                                                                                  >${msg(
+                                                                                      "Inherited",
+                                                                                  )}</span
+                                                                              >
+                                                                          </span>
+                                                                      </pf-tooltip>
+                                                                  </li>`;
+                                                              })}
+                                                          `
                                                         : html`<li><em>${msg("None")}</em></li>`}
                                                 </ul>
                                             </div>

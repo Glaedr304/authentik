@@ -73,7 +73,9 @@ class RoleFilterSet(FilterSet):
     managed__isnull = BooleanFilter(field_name="managed", lookup_expr="isnull")
 
     member = extend_schema_field(OpenApiTypes.INT)(
-        NumberFilter(method="filter_member", label="Filter by user membership (direct or inherited)")
+        NumberFilter(
+            method="filter_member", label="Filter by user membership (direct or inherited)"
+        )
     )
 
     def filter_member(self, queryset, name, value):
@@ -82,9 +84,7 @@ class RoleFilterSet(FilterSet):
             user = User.objects.get(pk=value)
         except User.DoesNotExist:
             return queryset.none()
-        return queryset.filter(
-            Q(users=user) | Q(ak_groups__in=user.all_groups())
-        ).distinct()
+        return queryset.filter(Q(users=user) | Q(ak_groups__in=user.all_groups())).distinct()
 
     class Meta:
         model = Role

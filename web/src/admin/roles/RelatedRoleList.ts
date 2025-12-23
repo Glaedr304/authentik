@@ -135,9 +135,24 @@ export class RelatedRoleList extends Table<Role> {
         </ak-forms-delete-bulk>`;
     }
 
+    isInherited(role: Role): boolean {
+        if (!this.targetUser?.roles) return false;
+        return !this.targetUser.roles.includes(role.pk);
+    }
+
     row(item: Role): SlottedTemplateResult[] {
+        const inherited = this.isInherited(item);
         return [
-            html`<a href="#/identity/roles/${item.pk}">${item.name}</a>`,
+            html`<a href="#/identity/roles/${item.pk}">${item.name}</a> ${inherited
+                    ? html`<pf-tooltip position="top" content=${msg("Inherited from group")}>
+                          <span
+                              class="pf-c-label pf-m-outline pf-m-cyan"
+                              style="margin-left: 0.5rem;"
+                          >
+                              <span class="pf-c-label__content">${msg("Inherited")}</span>
+                          </span>
+                      </pf-tooltip>`
+                    : nothing}`,
             html` <ak-forms-modal>
                 <span slot="submit">${msg("Update")}</span>
                 <span slot="header">${msg("Update Role")}</span>
