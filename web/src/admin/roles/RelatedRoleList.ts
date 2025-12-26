@@ -17,7 +17,7 @@ import { ifPresent } from "#elements/utils/attributes";
 import { RbacApi, Role, User } from "@goauthentik/api";
 
 import { msg, str } from "@lit/localize";
-import { html, nothing, TemplateResult } from "lit";
+import { html, nothing, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("ak-role-related-add")
@@ -96,18 +96,43 @@ export class RelatedRoleList extends Table<Role> {
     @property({ attribute: false })
     public targetUser: User | null = null;
 
-    async apiEndpoint(): Promise<PaginatedResponse<Role>> {
-        return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
-            ...(await this.defaultEndpointConfig()),
-            // Use 'member' filter to include both direct and inherited roles via groups
-            member: this.targetUser?.pk,
-        });
+    @property({ type: Boolean })
+    public showInherited = false;
+
+    willUpdate(changedProperties: PropertyValues<this>) {
+        super.willUpdate(changedProperties);
+        if (changedProperties.has("showInherited")) {
+            // Disable checkboxes in showInherited mode (view-only)
+            this.checkbox = !this.showInherited;
+        }
     }
 
-    protected columns: TableColumn[] = [
-        [msg("Name"), "name"],
-        [msg("Actions"), null, msg("Row Actions")],
-    ];
+    async apiEndpoint(): Promise<PaginatedResponse<Role>> {
+        const config = await this.defaultEndpointConfig();
+        if (this.showInherited) {
+            // Use 'member' filter to include both direct and inherited roles via groups
+            return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
+                ...config,
+                member: this.targetUser?.pk,
+            });
+        } else {
+            // Use 'users' filter to show only directly assigned roles
+            return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
+                ...config,
+                users: this.targetUser?.pk ? [this.targetUser.pk] : undefined,
+            });
+        }
+    }
+
+    get columns(): TableColumn[] {
+        if (this.showInherited) {
+            return [[msg("Name"), "name"]];
+        }
+        return [
+            [msg("Name"), "name"],
+            [msg("Actions"), null, msg("Row Actions")],
+        ];
+    }
 
     renderToolbarSelected(): TemplateResult {
         const disabled = !this.selectedElements.length;
@@ -141,19 +166,26 @@ export class RelatedRoleList extends Table<Role> {
     }
 
     row(item: Role): SlottedTemplateResult[] {
-        const inherited = this.isInherited(item);
+        const inherited = this.showInherited && this.isInherited(item);
+        const nameCell = html`<a href="#/identity/roles/${item.pk}">${item.name}</a>
+            ${inherited
+                ? html`<pf-tooltip position="top" content=${msg("Inherited from group")}>
+                      <span
+                          class="pf-c-label pf-m-outline pf-m-cyan"
+                          style="margin-left: 0.5rem;"
+                      >
+                          <span class="pf-c-label__content">${msg("Inherited")}</span>
+                      </span>
+                  </pf-tooltip>`
+                : nothing}`;
+
+        if (this.showInherited) {
+            return [nameCell];
+        }
+
         return [
-            html`<a href="#/identity/roles/${item.pk}">${item.name}</a> ${inherited
-                    ? html`<pf-tooltip position="top" content=${msg("Inherited from group")}>
-                          <span
-                              class="pf-c-label pf-m-outline pf-m-cyan"
-                              style="margin-left: 0.5rem;"
-                          >
-                              <span class="pf-c-label__content">${msg("Inherited")}</span>
-                          </span>
-                      </pf-tooltip>`
-                    : nothing}`,
-            html` <ak-forms-modal>
+            nameCell,
+            html`<ak-forms-modal>
                 <span slot="submit">${msg("Update")}</span>
                 <span slot="header">${msg("Update Role")}</span>
                 <ak-role-form slot="form" .instancePk=${item.pk}> </ak-role-form>
@@ -167,6 +199,10 @@ export class RelatedRoleList extends Table<Role> {
     }
 
     renderToolbar(): TemplateResult {
+        // Hide add buttons in showInherited mode (view-only for all roles)
+        if (this.showInherited) {
+            return html`${super.renderToolbar()}`;
+        }
         return html`
             ${this.targetUser
                 ? html`<ak-forms-modal>
