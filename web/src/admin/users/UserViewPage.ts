@@ -384,8 +384,7 @@ export class UserViewPage extends WithCapabilitiesConfig(WithSession(AKElement))
                 >
                     <div class="pf-c-card">
                         <div class="pf-c-card__body">
-                            <ak-role-related-list .targetUser=${user}>
-                            </ak-role-related-list>
+                            <ak-role-related-list .targetUser=${user}> </ak-role-related-list>
                         </div>
                     </div>
                 </div>

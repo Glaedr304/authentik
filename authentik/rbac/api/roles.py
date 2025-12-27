@@ -3,7 +3,7 @@
 from django.contrib.auth.models import Permission
 from django.db.models import Q
 from django.http import Http404
-from django_filters.filters import AllValuesMultipleFilter, BooleanFilter, NumberFilter
+from django_filters.filters import AllValuesMultipleFilter, BooleanFilter, CharFilter, NumberFilter
 from django_filters.filterset import FilterSet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
@@ -78,6 +78,13 @@ class RoleFilterSet(FilterSet):
         )
     )
 
+    group_member = extend_schema_field(OpenApiTypes.UUID)(
+        CharFilter(
+            method="filter_group_member",
+            label="Filter by group membership (direct or inherited from ancestors)",
+        )
+    )
+
     def filter_member(self, queryset, name, value):
         """Filter roles by user membership, including inherited via groups"""
         try:
@@ -86,9 +93,19 @@ class RoleFilterSet(FilterSet):
             return queryset.none()
         return queryset.filter(Q(users=user) | Q(ak_groups__in=user.all_groups())).distinct()
 
+    def filter_group_member(self, queryset, name, value):
+        """Filter roles by group membership, including inherited from ancestor groups"""
+        from authentik.core.models import Group
+
+        try:
+            group = Group.objects.get(pk=value)
+        except Group.DoesNotExist:
+            return queryset.none()
+        return group.all_roles()
+
     class Meta:
         model = Role
-        fields = ["name", "users", "managed", "member"]
+        fields = ["name", "users", "ak_groups", "managed", "member", "group_member"]
 
 
 class RoleViewSet(UsedByMixin, ModelViewSet):

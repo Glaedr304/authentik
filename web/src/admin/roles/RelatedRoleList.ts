@@ -14,7 +14,7 @@ import { PaginatedResponse, Table, TableColumn } from "#elements/table/Table";
 import { SlottedTemplateResult } from "#elements/types";
 import { ifPresent } from "#elements/utils/attributes";
 
-import { RbacApi, Role, User } from "@goauthentik/api";
+import { Group, RbacApi, Role, User } from "@goauthentik/api";
 
 import { msg, str } from "@lit/localize";
 import { html, nothing, PropertyValues, TemplateResult } from "lit";
@@ -96,36 +96,59 @@ export class RelatedRoleList extends Table<Role> {
     @property({ attribute: false })
     public targetUser: User | null = null;
 
+    @property({ attribute: false })
+    public targetGroup: Group | null = null;
+
     @property({ type: Boolean })
     public showInherited = false;
 
     willUpdate(changedProperties: PropertyValues<this>) {
         super.willUpdate(changedProperties);
-        if (changedProperties.has("showInherited")) {
-            // Disable checkboxes in showInherited mode (view-only)
-            this.checkbox = !this.showInherited;
+        if (changedProperties.has("showInherited") || changedProperties.has("targetGroup")) {
+            // Disable checkboxes in showInherited mode or for groups (view-only)
+            this.checkbox = !this.showInherited && !this.targetGroup;
         }
     }
 
     async apiEndpoint(): Promise<PaginatedResponse<Role>> {
         const config = await this.defaultEndpointConfig();
+
+        // Handle group filtering
+        if (this.targetGroup) {
+            if (this.showInherited) {
+                // Use 'group_member' filter to include inherited roles from ancestor groups
+                return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
+                    ...config,
+                    groupMember: this.targetGroup.pk,
+                });
+            } 
+                // Use 'ak_groups' filter for direct group roles only
+                return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
+                    ...config,
+                    akGroups: [this.targetGroup.pk],
+                });
+            
+        }
+
+        // Handle user filtering
         if (this.showInherited) {
             // Use 'member' filter to include both direct and inherited roles via groups
             return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
                 ...config,
                 member: this.targetUser?.pk,
             });
-        } else {
+        } 
             // Use 'users' filter to show only directly assigned roles
             return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
                 ...config,
                 users: this.targetUser?.pk ? [this.targetUser.pk] : undefined,
             });
-        }
+        
     }
 
     get columns(): TableColumn[] {
-        if (this.showInherited) {
+        // Hide actions column in showInherited mode or for groups (view-only)
+        if (this.showInherited || this.targetGroup) {
             return [[msg("Name"), "name"]];
         }
         return [
@@ -161,25 +184,34 @@ export class RelatedRoleList extends Table<Role> {
     }
 
     isInherited(role: Role): boolean {
-        if (!this.targetUser?.roles) return false;
-        return !this.targetUser.roles.includes(role.pk);
+        if (this.targetGroup) {
+            // For groups, check if role is in direct roles
+            if (!this.targetGroup.roles) return false;
+            return !this.targetGroup.roles.includes(role.pk);
+        }
+        if (this.targetUser) {
+            // For users, check if role is in direct roles
+            if (!this.targetUser.roles) return false;
+            return !this.targetUser.roles.includes(role.pk);
+        }
+        return false;
     }
 
     row(item: Role): SlottedTemplateResult[] {
         const inherited = this.showInherited && this.isInherited(item);
-        const nameCell = html`<a href="#/identity/roles/${item.pk}">${item.name}</a>
-            ${inherited
-                ? html`<pf-tooltip position="top" content=${msg("Inherited from group")}>
-                      <span
-                          class="pf-c-label pf-m-outline pf-m-cyan"
-                          style="margin-left: 0.5rem;"
-                      >
+        const inheritedTooltip = this.targetGroup
+            ? msg("Inherited from parent group")
+            : msg("Inherited from group");
+        const nameCell = html`<a href="#/identity/roles/${item.pk}">${item.name}</a> ${inherited
+                ? html`<pf-tooltip position="top" content=${inheritedTooltip}>
+                      <span class="pf-c-label pf-m-outline pf-m-cyan" style="margin-left: 0.5rem;">
                           <span class="pf-c-label__content">${msg("Inherited")}</span>
                       </span>
                   </pf-tooltip>`
                 : nothing}`;
 
-        if (this.showInherited) {
+        // Hide actions in showInherited mode or for groups (view-only)
+        if (this.showInherited || this.targetGroup) {
             return [nameCell];
         }
 
@@ -199,8 +231,8 @@ export class RelatedRoleList extends Table<Role> {
     }
 
     renderToolbar(): TemplateResult {
-        // Hide add buttons in showInherited mode (view-only for all roles)
-        if (this.showInherited) {
+        // Hide add buttons in showInherited mode or for groups (view-only)
+        if (this.showInherited || this.targetGroup) {
             return html`${super.renderToolbar()}`;
         }
         return html`

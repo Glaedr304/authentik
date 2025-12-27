@@ -20053,6 +20053,20 @@ paths:
       description: Role viewset
       parameters:
       - in: query
+        name: ak_groups
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        explode: true
+        style: form
+      - in: query
+        name: group_member
+        schema:
+          type: string
+          format: uuid
+      - in: query
         name: managed
         schema:
           type: array
