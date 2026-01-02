@@ -12,6 +12,7 @@ import {
     availableHashes,
     digestAlgorithmOptions,
     retrieveSignatureAlgorithm,
+    SAMLSupportedKeyTypes,
 } from "./SAMLProviderOptions.js";
 
 import { DEFAULT_CONFIG } from "#common/api/config";
@@ -275,7 +276,7 @@ export function renderForm({
                         .certificate=${provider.signingKp}
                         @input=${setHasSigningKp}
                         singleton
-                        .allowedKeyTypes=${[KeyTypeEnum.Rsa, KeyTypeEnum.Ec, KeyTypeEnum.Dsa]}
+                        .allowedKeyTypes=${SAMLSupportedKeyTypes}
                     ></ak-crypto-certificate-search>
                     <p class="pf-c-form__helper-text">
                         ${msg(
@@ -292,7 +293,7 @@ export function renderForm({
                     <ak-crypto-certificate-search
                         .certificate=${provider.verificationKp}
                         nokey
-                        .allowedKeyTypes=${[KeyTypeEnum.Rsa, KeyTypeEnum.Ec, KeyTypeEnum.Dsa]}
+                        .allowedKeyTypes=${SAMLSupportedKeyTypes}
                     ></ak-crypto-certificate-search>
                     <p class="pf-c-form__helper-text">
                         ${msg(
@@ -306,7 +307,7 @@ export function renderForm({
                 >
                     <ak-crypto-certificate-search
                         .certificate=${provider.encryptionKp}
-                        .allowedKeyTypes=${[KeyTypeEnum.Rsa, KeyTypeEnum.Ec, KeyTypeEnum.Dsa]}
+                        .allowedKeyTypes=${SAMLSupportedKeyTypes}
                     ></ak-crypto-certificate-search>
                     <p class="pf-c-form__helper-text">
                         ${msg("When selected, assertions will be encrypted using this keypair.")}

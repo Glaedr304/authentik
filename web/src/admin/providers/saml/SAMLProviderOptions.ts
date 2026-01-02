@@ -60,3 +60,5 @@ export function retrieveSignatureAlgorithm(
 
     return familyMap.get(algorithm) ?? null;
 }
+
+export const SAMLSupportedKeyTypes = [KeyTypeEnum.Rsa, KeyTypeEnum.Ec, KeyTypeEnum.Dsa];
