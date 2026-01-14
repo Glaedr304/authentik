@@ -32,6 +32,22 @@ The following placeholders are used in this guide:
 This documentation lists only the settings that you need to change from their default values. Be aware that any changes other than those explicitly mentioned in this guide could cause issues accessing your application.
 :::
 
+## Configuration methods
+
+There are two ways to configure single sign-on for Jellyfin. You can configure it via LDAP authentication or via OpenID Connect.
+
+import TabItem from "@theme/TabItem";
+import Tabs from "@theme/Tabs";
+
+<Tabs
+    defaultValue="ldap"
+    values={[
+        { label: "LDAP", value: "ldap" },
+        { label: "OIDC", value: "oidc" },
+    ]}
+>
+    <TabItem value="ldap">
+
 ## LDAP Configuration
 
 ### authentik Configuration
@@ -93,7 +109,9 @@ At this point, enter a username and click **Save Search Attribute Settings and Q
 1. Click "Save"
 2. Logout, and login with an LDAP user. Username **must** be used, logging in with email will not work.
 
-## OIDC Configuration
+</TabItem>
+
+<TabItem value="oidc">
 
 ### authentik Configuration
 
@@ -174,3 +192,6 @@ a.raised.emby-button {
 :::info
 If you have problems check your logs which are under the **Administration** > **Dashboard** then "logs" and will be near the bottom (most likely) with `Jellyfin.Plugin.SSO_Auth.` as the start of the lines you are looking for.
 :::
+
+</TabItem>
+</Tabs>
